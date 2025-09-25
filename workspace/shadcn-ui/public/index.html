@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XROMEDA · 1:1 화상채팅 기획서</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- S3 Document Viewer Script -->
+    <script>
+    (async function () {
+      const BASE = "https://xromeda-docs.s3.ap-northeast-2.amazonaws.com";
+      const DOC_ID = "xromeda-main";
+
+      async function loadDoc() {
+        try {
+          // Check if we're in shared document mode
+          const urlParams = new URLSearchParams(window.location.search);
+          const sharedDocId = urlParams.get('doc');
+          
+          if (!sharedDocId) {
+            // Not in shared mode, let React handle it
+            return;
+          }
+
+          // 1) manifest 읽기
+          const manUrl = `${BASE}/docs/${sharedDocId}/manifest.json?t=${Date.now()}`;
+          const manifest = await fetch(manUrl, { 
+            cache: "no-cache",
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            }
+          }).then(r => r.json());
+
+          // 2) manifest.path로 release 파일 읽기
+          const relUrl = `${BASE}/docs/${sharedDocId}/${manifest.path}?t=${Date.now()}`;
+          const doc = await fetch(relUrl, { 
+            cache: "no-cache",
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            }
+          }).then(r => r.json());
+
+          // 3) Store in window for React to pick up
+          window.__SHARED_DOCUMENT__ = doc;
+          
+          console.log('Shared document loaded from S3:', doc);
+        } catch (error) {
+          console.error('Failed to load shared document:', error);
+          window.__SHARED_DOCUMENT_ERROR__ = error.message;
+        }
+      }
+
+      // Load document before React initializes
+      await loadDoc();
+    })();
+    </script>
+  </body>
+</html>
